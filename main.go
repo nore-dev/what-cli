@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	p := tea.NewProgram(NewApp())
+	p := tea.NewProgram(NewApp(), tea.WithAltScreen())
 
 	if err := p.Start(); err != nil {
 		os.Exit(1)
