@@ -7,14 +7,16 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nore-dev/what-cli/models"
 )
 
 type App struct {
-	list list.Model
+	list      list.Model
+	ideaModel models.IdeaModel
+	selected  bool
 }
 
 var (
-	// titleStyle        = lipgloss.NewStyle().MarginLeft(2)
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
@@ -60,10 +62,14 @@ func NewApp() App {
 		Page("Liked"),
 	}
 
-	app := App{list: list.New(items, itemDelegate{}, 0, 0)}
+	app := App{
+		list:      list.New(items, itemDelegate{}, 0, 0),
+		selected:  false,
+		ideaModel: models.NewIdeaModel(),
+	}
+
 	app.list.Title = "What CLI"
 
-	// app.list.Styles.Title = titleStyle
 	app.list.Styles.PaginationStyle = paginationStyle
 	app.list.Styles.HelpStyle = helpStyle
 
@@ -86,15 +92,33 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			return a, tea.Quit
+		case "enter", " ":
+			switch a.list.SelectedItem() {
+			case Page("Liked"), Page("Random"), Page("Submit"):
+				break
+			default:
+				a.selected = true
+			}
 		}
 	}
 
 	var cmd tea.Cmd
-	a.list, cmd = a.list.Update(msg)
+
+	if a.selected {
+		a.ideaModel, cmd = a.ideaModel.Update(msg)
+	} else {
+		a.list, cmd = a.list.Update(msg)
+	}
 
 	return a, cmd
 }
 
 func (a App) View() string {
-	return a.list.View()
+	v := a.list.View()
+
+	if a.selected {
+		v = a.ideaModel.View()
+	}
+
+	return v
 }
