@@ -1,7 +1,11 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -17,15 +21,15 @@ var (
 )
 
 type Tag struct {
-	value string
+	Value string `json:"value,omitempty"`
 }
 
 type Idea struct {
-	description string
-	id          int
-	likes       int
-	title       string
-	tags        []Tag
+	Description string `json:"description,omitempty"`
+	Id          int    `json:"id,omitempty"`
+	Likes       int    `json:"likes,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Tags        []Tag  `json:"tags,omitempty"`
 }
 
 type IdeaModel struct {
@@ -39,23 +43,8 @@ func NewIdeaModel() IdeaModel {
 	return IdeaModel{
 		index: 0,
 		page:  0,
-		list: []Idea{
-			{
-				title:       "Title",
-				description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-				tags:        []Tag{{value: "tag"}},
-				likes:       31,
-				id:          0,
-			},
-			{
-				title:       "Title 2",
-				description: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaaa",
-				tags:        []Tag{{value: "awesome"}},
-				likes:       13,
-				id:          0,
-			},
-		},
-		url: "https://what-to-code.com/api/ideas?order=POPULAR&page=0",
+		list:  []Idea{},
+		url:   "https://what-to-code.com/api/ideas?order=POPULAR&page=0",
 	}
 }
 
@@ -65,6 +54,11 @@ func (i IdeaModel) Init() tea.Cmd {
 
 func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 
+	// First Time
+	if len(i.list) == 0 {
+		i.getMoreIdeas()
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -73,9 +67,14 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 				i.index -= 1
 			}
 		case "s", "down", "d":
-			if i.index < len(i.list)-1 {
+			if i.index < len(i.list) {
 				i.index += 1
 			}
+
+			if i.index == len(i.list) {
+				i.getMoreIdeas()
+			}
+
 		}
 	}
 
@@ -84,18 +83,34 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 
 func (i IdeaModel) renderTags() string {
 	s := ""
-	for _, tag := range i.list[i.index].tags {
-		s += "#" + tag.value
+	for _, tag := range i.list[i.index].Tags {
+		s += "#" + tag.Value
 	}
 
 	return tagStyle.Render(s)
 }
 
-func (i IdeaModel) View() string {
-	s := titleStyle.Render(i.list[i.index].title) + "\n"
+func (i *IdeaModel) getMoreIdeas() {
+	var newIdeas []Idea
 
-	s += descriptionStyle.Render(i.list[i.index].description) + "\n"
-	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].likes)) + "\n\n"
+	res, _ := http.Get(i.url)
+
+	body, _ := ioutil.ReadAll(res.Body)
+	err := json.Unmarshal(body, &newIdeas)
+
+	if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
+
+	i.list = append(i.list, newIdeas...)
+}
+
+func (i IdeaModel) View() string {
+	s := titleStyle.Render(i.list[i.index].Title) + "\n"
+
+	s += descriptionStyle.Render(i.list[i.index].Description) + "\n"
+	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].Likes)) + "\n\n"
 	s += tagStyle.Render(i.renderTags())
 
 	return ideaStyle.Render(s)
