@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,6 +18,8 @@ var (
 				Foreground(lipgloss.Color("#ffffff")).PaddingLeft(1).PaddingRight(1)
 	tagStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
 )
+
+const API_URL = "https://what-to-code.com/api"
 
 type Tag struct {
 	Value string `json:"value,omitempty"`
@@ -34,9 +35,9 @@ type Idea struct {
 
 type IdeaModel struct {
 	list  []Idea
-	url   string
 	index int
 	page  int
+	order string
 }
 
 func NewIdeaModel() IdeaModel {
@@ -44,7 +45,7 @@ func NewIdeaModel() IdeaModel {
 		index: 0,
 		page:  0,
 		list:  []Idea{},
-		url:   "https://what-to-code.com/api/ideas?order=POPULAR&page=0",
+		order: "POPULAR",
 	}
 }
 
@@ -87,31 +88,44 @@ func (i IdeaModel) renderTags() string {
 		s += "#" + tag.Value
 	}
 
-	return tagStyle.Render(s)
+	return s
 }
 
 func (i *IdeaModel) getMoreIdeas() {
 	var newIdeas []Idea
 
-	res, _ := http.Get(i.url)
+	res, _ := http.Get(i.getListUrl())
 
 	body, _ := ioutil.ReadAll(res.Body)
 	err := json.Unmarshal(body, &newIdeas)
 
 	if err != nil {
 		fmt.Print(err)
-		os.Exit(1)
 	}
 
+	defer res.Body.Close()
+
 	i.list = append(i.list, newIdeas...)
+	i.page += 1
+}
+
+func (i IdeaModel) getListUrl() string {
+	return fmt.Sprintf("%s/ideas?order=%s&page=%d", API_URL, i.order, i.page)
+}
+
+func text_default(text string, def string) string {
+	if len(text) == 0 {
+		return "There is no " + def
+	}
+	return text
 }
 
 func (i IdeaModel) View() string {
 	s := titleStyle.Render(i.list[i.index].Title) + "\n"
 
-	s += descriptionStyle.Render(i.list[i.index].Description) + "\n"
+	s += descriptionStyle.Render(text_default(i.list[i.index].Description, "description")) + "\n"
 	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].Likes)) + "\n\n"
-	s += tagStyle.Render(i.renderTags())
+	s += tagStyle.Render(text_default(i.renderTags(), "tag"))
 
 	return ideaStyle.Render(s)
 }
