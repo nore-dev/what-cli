@@ -16,7 +16,11 @@ var (
 	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa")).Margin(1).Italic(true)
 	likeStyle        = lipgloss.NewStyle().UnsetAlign().Align(lipgloss.Left).Background(lipgloss.Color("#ff0000")).
 				Foreground(lipgloss.Color("#ffffff")).PaddingLeft(1).PaddingRight(1)
-	tagStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	tagStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	orderStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFDF5")).
+			Background(lipgloss.Color("#25A065")).
+			Padding(0, 1)
 )
 
 const API_URL = "https://what-to-code.com/api"
@@ -37,7 +41,7 @@ type IdeaModel struct {
 	list  []Idea
 	index int
 	page  int
-	order string
+	Order string
 }
 
 func NewIdeaModel() IdeaModel {
@@ -45,7 +49,7 @@ func NewIdeaModel() IdeaModel {
 		index: 0,
 		page:  0,
 		list:  []Idea{},
-		order: "POPULAR",
+		Order: "POPULAR",
 	}
 }
 
@@ -110,7 +114,7 @@ func (i *IdeaModel) getMoreIdeas() {
 }
 
 func (i IdeaModel) getListUrl() string {
-	return fmt.Sprintf("%s/ideas?order=%s&page=%d", API_URL, i.order, i.page)
+	return fmt.Sprintf("%s/ideas?order=%s&page=%d", API_URL, i.Order, i.page)
 }
 
 func text_default(text string, def string) string {
@@ -120,6 +124,10 @@ func text_default(text string, def string) string {
 	return text
 }
 
+func (i *IdeaModel) Clear() {
+	i.list = nil
+}
+
 func (i IdeaModel) View() string {
 	s := titleStyle.Render(i.list[i.index].Title) + "\n"
 
@@ -127,5 +135,5 @@ func (i IdeaModel) View() string {
 	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].Likes)) + "\n\n"
 	s += tagStyle.Render(text_default(i.renderTags(), "tag"))
 
-	return ideaStyle.Render(s)
+	return orderStyle.Render(i.Order) + "\n" + ideaStyle.Render(s)
 }

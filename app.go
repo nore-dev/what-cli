@@ -85,6 +85,21 @@ func (a App) Init() tea.Cmd {
 	return nil
 }
 
+func (a App) getOrder() string {
+	switch a.list.SelectedItem() {
+	case Page("Popular"):
+		return "POPULAR"
+	case Page("Oldest"):
+		return "OLDEST"
+	case Page("Rising"):
+		return "RISING"
+	case Page("Recent"):
+		return "RISING"
+	}
+
+	return ""
+}
+
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
@@ -97,6 +112,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case Page("Liked"), Page("Random"), Page("Submit"):
 				break
 			default:
+				if !a.selected {
+					a.ideaModel.Clear()
+					a.ideaModel.Order = a.getOrder()
+				}
+
 				a.selected = true
 			}
 		}
