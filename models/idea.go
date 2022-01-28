@@ -82,6 +82,9 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 				i.getMoreIdeas()
 			}
 
+		case " ", "enter":
+			i.Like()
+
 		}
 	}
 
@@ -90,7 +93,7 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 
 func (i IdeaModel) renderTags() string {
 	s := ""
-	for _, tag := range i.list[i.index].Tags {
+	for _, tag := range i.currentIdea().Tags {
 		s += "#" + tag.Value
 	}
 
@@ -130,13 +133,40 @@ func (i *IdeaModel) Clear() {
 	i.list = nil
 }
 
-func (i IdeaModel) View() string {
-	s := titleStyle.Render(i.list[i.index].Title) + "\n"
+func (i IdeaModel) Like() {
+	http.Post(fmt.Sprintf("%s/ideas/%d/like", API_URL, i.currentIdea().Id), "", nil)
 
-	s += descriptionStyle.Render(text_default(i.list[i.index].Description, "description")) + "\n"
-	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].Likes)) + "\n\n"
+	*i.currentIdea() = i.getIdea(i.currentIdea().Id)
+}
+
+func (i IdeaModel) currentIdea() *Idea {
+	return &i.list[i.index]
+}
+
+func (i IdeaModel) getIdea(id int) Idea {
+	var idea Idea
+
+	res, _ := http.Get(fmt.Sprintf("%s/ideas/%d", API_URL, i.currentIdea().Id))
+
+	body, _ := ioutil.ReadAll(res.Body)
+	err := json.Unmarshal(body, &idea)
+
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	defer res.Body.Close()
+
+	return idea
+}
+
+func (i IdeaModel) View() string {
+	s := titleStyle.Render(i.currentIdea().Title) + "\n"
+
+	s += descriptionStyle.Render(text_default(i.currentIdea().Description, "description")) + "\n"
+	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.currentIdea().Likes)) + "\n\n"
 	s += tagStyle.Render(text_default(i.renderTags(), "tag"))
 
 	return modelStyle.Render(orderStyle.Render(i.Order) + "\n" + ideaStyle.Render(s) +
-		helpStyle.Render("↑/k/w previous idea • ↓/j/s next idea • q/esc quit"))
+		helpStyle.Render("↑/k/w previous idea • ↓/j/s next idea • space like/dislike • q/esc quit"))
 }
