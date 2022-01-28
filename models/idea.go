@@ -13,14 +13,16 @@ import (
 var (
 	ideaStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder(), true).Padding(1).Width(40).Align(lipgloss.Center)
 	titleStyle       = lipgloss.NewStyle().Bold(true).Underline(true)
-	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa")).Margin(1).Italic(true)
-	likeStyle        = lipgloss.NewStyle().UnsetAlign().Align(lipgloss.Left).Background(lipgloss.Color("#ff0000")).
-				Foreground(lipgloss.Color("#ffffff")).PaddingLeft(1).PaddingRight(1)
-	tagStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaa")).Margin(1).Italic(true)
+	likeStyle        = lipgloss.NewStyle().UnsetAlign().Align(lipgloss.Left).Background(lipgloss.Color("#CD5C5C")).
+				Foreground(lipgloss.Color("#fff")).PaddingLeft(1).PaddingRight(1)
+	tagStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#0f0"))
 	orderStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFDF5")).
 			Background(lipgloss.Color("#25A065")).
 			Padding(0, 1)
+	helpStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).MarginTop(2)
+	modelStyle = lipgloss.NewStyle().MarginLeft(2)
 )
 
 const API_URL = "https://what-to-code.com/api"
@@ -67,11 +69,11 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "w", "up", "a":
+		case "w", "up", "a", "k":
 			if i.index > 0 {
 				i.index -= 1
 			}
-		case "s", "down", "d":
+		case "s", "down", "d", "j":
 			if i.index < len(i.list) {
 				i.index += 1
 			}
@@ -135,5 +137,6 @@ func (i IdeaModel) View() string {
 	s += likeStyle.Render(fmt.Sprintf("♥ %d", i.list[i.index].Likes)) + "\n\n"
 	s += tagStyle.Render(text_default(i.renderTags(), "tag"))
 
-	return orderStyle.Render(i.Order) + "\n" + ideaStyle.Render(s)
+	return modelStyle.Render(orderStyle.Render(i.Order) + "\n" + ideaStyle.Render(s) +
+		helpStyle.Render("↑/k/w previous idea • ↓/j/s next idea • q/esc quit"))
 }
