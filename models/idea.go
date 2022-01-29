@@ -12,7 +12,7 @@ import (
 
 var (
 	ideaStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder(), true).Padding(1).Width(40).Align(lipgloss.Center)
-	titleStyle       = lipgloss.NewStyle().Bold(true).Underline(true)
+	titleStyle       = lipgloss.NewStyle().Bold(true)
 	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaa")).Margin(1).Italic(true)
 	likeStyle        = lipgloss.NewStyle().UnsetAlign().Align(lipgloss.Left).Background(lipgloss.Color("#CD5C5C")).
 				Foreground(lipgloss.Color("#fff")).PaddingLeft(1).PaddingRight(1)
@@ -101,6 +101,12 @@ func (i IdeaModel) renderTags() string {
 }
 
 func (i *IdeaModel) getMoreIdeas() {
+
+	if i.Order == "RANDOM" {
+		i.getRandomIdea()
+		return
+	}
+
 	var newIdeas []Idea
 
 	res, _ := http.Get(i.getListUrl())
@@ -118,6 +124,14 @@ func (i *IdeaModel) getMoreIdeas() {
 	i.page += 1
 }
 
+func (i *IdeaModel) getRandomIdea() {
+	if len(i.list) == 0 {
+		i.list = append(i.list, i.getIdea("random"))
+	} else {
+		*i.currentIdea() = i.getIdea("random")
+	}
+}
+
 func (i IdeaModel) getListUrl() string {
 	return fmt.Sprintf("%s/ideas?order=%s&page=%d", API_URL, i.Order, i.page)
 }
@@ -130,23 +144,28 @@ func text_default(text string, def string) string {
 }
 
 func (i *IdeaModel) Clear() {
+	i.index = 0
 	i.list = nil
 }
 
 func (i IdeaModel) Like() {
 	http.Post(fmt.Sprintf("%s/ideas/%d/like", API_URL, i.currentIdea().Id), "", nil)
 
-	*i.currentIdea() = i.getIdea(i.currentIdea().Id)
+	*i.currentIdea() = i.getIdea(fmt.Sprintf("%d", i.currentIdea().Id))
 }
 
 func (i IdeaModel) currentIdea() *Idea {
+	if i.Order == "RANDOM" {
+		return &i.list[0]
+	}
+
 	return &i.list[i.index]
 }
 
-func (i IdeaModel) getIdea(id int) Idea {
+func (i IdeaModel) getIdea(id string) Idea {
 	var idea Idea
 
-	res, _ := http.Get(fmt.Sprintf("%s/ideas/%d", API_URL, i.currentIdea().Id))
+	res, _ := http.Get(fmt.Sprintf("%s/ideas/%s", API_URL, id))
 
 	body, _ := ioutil.ReadAll(res.Body)
 	err := json.Unmarshal(body, &idea)

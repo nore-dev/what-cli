@@ -59,7 +59,6 @@ func NewApp() App {
 		Page("Oldest"),
 		Page("Random"),
 		Page("Submit"),
-		Page("Liked"),
 	}
 
 	app := App{
@@ -95,6 +94,8 @@ func (a App) getOrder() string {
 		return "RISING"
 	case Page("Recent"):
 		return "RISING"
+	case Page("Random"):
+		return "RANDOM"
 	}
 
 	return ""
@@ -106,10 +107,14 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
-			return a, tea.Quit
+			if a.selected {
+				a.selected = false
+			} else {
+				return a, tea.Quit
+			}
 		case "enter", " ":
 			switch a.list.SelectedItem() {
-			case Page("Liked"), Page("Random"), Page("Submit"):
+			case Page("Submit"):
 				break
 			default:
 				if !a.selected {
@@ -122,15 +127,13 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	var cmd tea.Cmd
-
 	if a.selected {
-		a.ideaModel, cmd = a.ideaModel.Update(msg)
+		a.ideaModel, _ = a.ideaModel.Update(msg)
 	} else {
-		a.list, cmd = a.list.Update(msg)
+		a.list, _ = a.list.Update(msg)
 	}
 
-	return a, cmd
+	return a, nil
 }
 
 func (a App) View() string {
