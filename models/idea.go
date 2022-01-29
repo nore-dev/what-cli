@@ -40,18 +40,20 @@ type Idea struct {
 }
 
 type IdeaModel struct {
-	list  []Idea
-	index int
-	page  int
-	Order string
+	list    []Idea
+	index   int
+	page    int
+	Order   string
+	hasMore bool
 }
 
 func NewIdeaModel() IdeaModel {
 	return IdeaModel{
-		index: 0,
-		page:  0,
-		list:  []Idea{},
-		Order: "POPULAR",
+		index:   0,
+		page:    0,
+		list:    []Idea{},
+		Order:   "POPULAR",
+		hasMore: true,
 	}
 }
 
@@ -79,6 +81,10 @@ func (i IdeaModel) Update(msg tea.Msg) (IdeaModel, tea.Cmd) {
 			}
 
 			if i.index == len(i.list) {
+				if !i.hasMore {
+					i.index -= 1
+					break
+				}
 				i.getMoreIdeas()
 			}
 
@@ -120,6 +126,12 @@ func (i *IdeaModel) getMoreIdeas() {
 
 	defer res.Body.Close()
 
+	if len(newIdeas) == 0 {
+		i.index -= 1
+		i.hasMore = false
+		return
+	}
+
 	i.list = append(i.list, newIdeas...)
 	i.page += 1
 }
@@ -144,6 +156,7 @@ func text_default(text string, def string) string {
 }
 
 func (i *IdeaModel) Clear() {
+	i.hasMore = true
 	i.index = 0
 	i.list = nil
 }
