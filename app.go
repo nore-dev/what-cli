@@ -11,9 +11,11 @@ import (
 )
 
 type App struct {
-	list      list.Model
-	ideaModel models.IdeaModel
-	selected  bool
+	list        list.Model
+	ideaModel   models.IdeaModel
+	submitModel models.SubmitModel
+	selected    bool
+	isIdeaPage  bool
 }
 
 var (
@@ -62,9 +64,11 @@ func NewApp() App {
 	}
 
 	app := App{
-		list:      list.New(items, itemDelegate{}, 0, 0),
-		selected:  false,
-		ideaModel: models.NewIdeaModel(),
+		list:        list.New(items, itemDelegate{}, 0, 0),
+		selected:    false,
+		isIdeaPage:  false,
+		ideaModel:   models.NewIdeaModel(),
+		submitModel: models.NewSubmitModel(),
 	}
 
 	app.list.Title = "What CLI"
@@ -115,7 +119,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", " ":
 			switch a.list.SelectedItem() {
 			case Page("Submit"):
-				break
+				a.isIdeaPage = false
+				a.selected = true
 			default:
 				if !a.selected {
 					a.ideaModel.Clear()
@@ -123,24 +128,34 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				a.selected = true
+				a.isIdeaPage = true
 			}
 		}
 	}
 
+	var cmd tea.Cmd
 	if a.selected {
-		a.ideaModel, _ = a.ideaModel.Update(msg)
+		if a.isIdeaPage {
+			a.ideaModel, _ = a.ideaModel.Update(msg)
+		} else {
+			a.submitModel, cmd = a.submitModel.Update(msg)
+		}
 	} else {
 		a.list, _ = a.list.Update(msg)
 	}
 
-	return a, nil
+	return a, cmd
 }
 
 func (a App) View() string {
 	v := a.list.View()
 
 	if a.selected {
-		v = a.ideaModel.View()
+		if a.isIdeaPage {
+			v = a.ideaModel.View()
+		} else {
+			v = a.submitModel.View()
+		}
 	}
 
 	return v
