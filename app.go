@@ -97,7 +97,7 @@ func (a App) getOrder() string {
 	case Page("Rising"):
 		return "RISING"
 	case Page("Recent"):
-		return "RISING"
+		return "RECENT"
 	case Page("Random"):
 		return "RANDOM"
 	}
