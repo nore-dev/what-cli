@@ -12,7 +12,7 @@
 
 <img src="https://i.imgur.com/r0oNhTF.png" height="500">
 
-This project allows you to view ideas from [**what-to-code.com**](what-to-code.com) from your terminal. You can also share your own ideas and like the ideas you like.
+This project allows you to view ideas from [**what-to-code.com**](https://what-to-code.com) from your terminal. You can also share your own ideas and like the ideas you like.
 
 ![](https://i.imgur.com/5l4hUZa.png)
 
